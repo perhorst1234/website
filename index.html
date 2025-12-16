@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Zelfgehoste Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="hero">
+    <div class="hero__content">
+      <p class="eyebrow">Zelfgehoste hub</p>
+      <h1>Bundel al je eigen services op één plek</h1>
+      <p class="lede">
+        Sla links op naar je zelfgehoste websites, groepeer ze per omgeving en genereer direct
+        een curl-commando wanneer je een bestand wilt delen.
+      </p>
+      <div class="hero__actions">
+        <button class="btn primary" data-tab-target="#links">Bekijk links</button>
+        <button class="btn ghost" data-tab-target="#upload">Upload met curl</button>
+      </div>
+    </div>
+    <div class="hero__badge">
+      <div class="badge__icon">⚡️</div>
+      <div>
+        <p class="badge__title">Sneller schakelen</p>
+        <p class="badge__text">Je links en bestanden direct binnen handbereik.</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="shell">
+    <nav class="tabs" aria-label="Hoofdsecties">
+      <button class="tab active" data-tab-target="#links">Mijn links</button>
+      <button class="tab" data-tab-target="#add">Nieuwe link</button>
+      <button class="tab" data-tab-target="#upload">Upload &amp; curl</button>
+      <button class="tab" data-tab-target="#mindmap">Mindmap</button>
+    </nav>
+
+    <section id="links" class="panel active" aria-labelledby="links">
+      <header class="panel__header">
+        <div>
+          <p class="eyebrow">Overzicht</p>
+          <h2>Zelfgehoste websites</h2>
+          <p class="lede">Bewaar de URL, omgeving en een korte notitie. Alles blijft lokaal opgeslagen in je browser.</p>
+        </div>
+        <div class="filter-row">
+          <div class="filter">
+            <label for="filterTag" class="filter__label">Filter op omgeving</label>
+            <select id="filterTag" class="input">
+              <option value="">Alle</option>
+            </select>
+          </div>
+          <div class="filter">
+            <label for="filterType" class="filter__label">Type</label>
+            <select id="filterType" class="input">
+              <option value="">Alle</option>
+              <option value="web">Website</option>
+              <option value="smb">SMB share</option>
+              <option value="minecraft">Minecraft server</option>
+              <option value="anders">Overig</option>
+            </select>
+          </div>
+          <label class="switch" title="Groepeer op server">
+            <input type="checkbox" id="groupToggle" />
+            <span>Groepeer op server</span>
+          </label>
+        </div>
+      </header>
+      <div id="linkList" class="card-grid" role="list"></div>
+      <p class="muted" id="emptyState">Nog geen links toegevoegd. Voeg je eerste service toe op het tabblad "Nieuwe link".</p>
+    </section>
+
+    <section id="add" class="panel" aria-labelledby="add">
+      <div class="panel__header">
+        <div>
+          <p class="eyebrow">Toevoegen</p>
+          <h2>Nieuwe link</h2>
+          <p class="lede">Sla een URL op met naam, omgeving en optioneel een beschrijving.</p>
+        </div>
+      </div>
+      <form id="linkForm" class="stack" autocomplete="off">
+        <label class="field">
+          <span>Naam</span>
+          <input class="input" type="text" id="name" required placeholder="Bijv. Home Assistant" />
+        </label>
+        <label class="field">
+          <span>URL</span>
+          <input class="input" type="url" id="url" required placeholder="https://" />
+        </label>
+        <label class="field">
+          <span>Type</span>
+          <select class="input" id="type">
+            <option value="web">Website</option>
+            <option value="smb">SMB share</option>
+            <option value="minecraft">Minecraft server</option>
+            <option value="anders">Overig</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Omgeving / tag</span>
+          <input class="input" type="text" id="tag" required placeholder="Bijv. Thuis, Lab, Werk" />
+        </label>
+        <label class="field">
+          <span>Server / groep</span>
+          <input class="input" type="text" id="serverGroup" placeholder="Bijv. NAS-01, Proxmox, MC-cluster" />
+        </label>
+        <div class="field grid-2">
+          <label class="field">
+            <span>Host (Minecraft of SMB)</span>
+            <input class="input" type="text" id="host" placeholder="mc.example.net of host/share" />
+          </label>
+          <label class="field">
+            <span>Port (optioneel)</span>
+            <input class="input" type="number" id="port" min="1" max="65535" placeholder="25565" />
+          </label>
+        </div>
+        <label class="field">
+          <span>Korte notitie</span>
+          <textarea class="input" id="note" rows="3" placeholder="Optioneel: beschrijf waarvoor de service dient"></textarea>
+        </label>
+        <div class="actions">
+          <button type="reset" class="btn ghost">Reset</button>
+          <button type="submit" class="btn primary">Opslaan</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="upload" class="panel" aria-labelledby="upload">
+      <div class="panel__header">
+        <div>
+          <p class="eyebrow">Delen</p>
+          <h2>Upload &amp; curl link</h2>
+          <p class="lede">Selecteer een bestand, kies een doel-URL en krijg direct het curl-commando dat je kunt plakken in een script.</p>
+        </div>
+      </div>
+      <form id="uploadForm" class="stack" autocomplete="off">
+        <label class="field">
+          <span>Bestand</span>
+          <input class="input" type="file" id="fileInput" required />
+        </label>
+        <label class="field">
+          <span>Upload endpoint</span>
+          <input class="input" type="url" id="endpoint" required placeholder="https://uploads.example.com" />
+        </label>
+        <div class="actions">
+          <button type="reset" class="btn ghost">Reset</button>
+          <button type="submit" class="btn primary">Genereer curl-link</button>
+        </div>
+      </form>
+      <div id="uploadResult" class="result" hidden>
+        <div class="result__row">
+          <span class="result__label">Curl-commando</span>
+          <div class="result__value">
+            <code id="curlCommand"></code>
+            <button class="icon-button" type="button" data-copy-target="curlCommand" aria-label="Kopieer curl commando">📋</button>
+          </div>
+        </div>
+        <div class="result__row">
+          <span class="result__label">Download link</span>
+          <div class="result__value">
+            <code id="downloadLink"></code>
+            <button class="icon-button" type="button" data-copy-target="downloadLink" aria-label="Kopieer download link">📋</button>
+          </div>
+        </div>
+        <p class="muted">Tip: Gebruik <code>-T</code> voor een upload of <code>-F</code> wanneer je multipart uploads nodig hebt.</p>
+      </div>
+    </section>
+
+    <section id="mindmap" class="panel" aria-labelledby="mindmap">
+      <div class="panel__header">
+        <div>
+          <p class="eyebrow">Structuur</p>
+          <h2>Mindmap</h2>
+          <p class="lede">Teken hoe alles samenhangt: servers, shares, game hosts en diensten. Alles wordt lokaal opgeslagen.</p>
+        </div>
+      </div>
+
+      <form id="mapForm" class="stack" autocomplete="off">
+        <label class="field">
+          <span>Titel</span>
+          <input class="input" type="text" id="mapTitle" required placeholder="Bijv. MC cluster" />
+        </label>
+        <label class="field">
+          <span>Onder (kies ouder)</span>
+          <select class="input" id="mapParent">
+            <option value="">Geen (topniveau)</option>
+          </select>
+        </label>
+        <div class="actions">
+          <button type="reset" class="btn ghost">Reset</button>
+          <button type="submit" class="btn primary">Knoop toevoegen</button>
+        </div>
+      </form>
+
+      <div class="mindmap" id="mindmapTree" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Links worden lokaal opgeslagen in je browser. De upload-tab geeft voorbeeldcommando's en deelt niets extern.</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
