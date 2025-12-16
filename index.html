@@ -37,6 +37,7 @@
       <button class="tab active" data-tab-target="#links">Mijn links</button>
       <button class="tab" data-tab-target="#add">Nieuwe link</button>
       <button class="tab" data-tab-target="#upload">Upload &amp; curl</button>
+      <button class="tab" data-tab-target="#mindmap">Mindmap</button>
     </nav>
 
     <section id="links" class="panel active" aria-labelledby="links">
@@ -46,11 +47,27 @@
           <h2>Zelfgehoste websites</h2>
           <p class="lede">Bewaar de URL, omgeving en een korte notitie. Alles blijft lokaal opgeslagen in je browser.</p>
         </div>
-        <div class="filter">
-          <label for="filterTag" class="filter__label">Filter op omgeving</label>
-          <select id="filterTag" class="input">
-            <option value="">Alle</option>
-          </select>
+        <div class="filter-row">
+          <div class="filter">
+            <label for="filterTag" class="filter__label">Filter op omgeving</label>
+            <select id="filterTag" class="input">
+              <option value="">Alle</option>
+            </select>
+          </div>
+          <div class="filter">
+            <label for="filterType" class="filter__label">Type</label>
+            <select id="filterType" class="input">
+              <option value="">Alle</option>
+              <option value="web">Website</option>
+              <option value="smb">SMB share</option>
+              <option value="minecraft">Minecraft server</option>
+              <option value="anders">Overig</option>
+            </select>
+          </div>
+          <label class="switch" title="Groepeer op server">
+            <input type="checkbox" id="groupToggle" />
+            <span>Groepeer op server</span>
+          </label>
         </div>
       </header>
       <div id="linkList" class="card-grid" role="list"></div>
@@ -75,9 +92,32 @@
           <input class="input" type="url" id="url" required placeholder="https://" />
         </label>
         <label class="field">
+          <span>Type</span>
+          <select class="input" id="type">
+            <option value="web">Website</option>
+            <option value="smb">SMB share</option>
+            <option value="minecraft">Minecraft server</option>
+            <option value="anders">Overig</option>
+          </select>
+        </label>
+        <label class="field">
           <span>Omgeving / tag</span>
           <input class="input" type="text" id="tag" required placeholder="Bijv. Thuis, Lab, Werk" />
         </label>
+        <label class="field">
+          <span>Server / groep</span>
+          <input class="input" type="text" id="serverGroup" placeholder="Bijv. NAS-01, Proxmox, MC-cluster" />
+        </label>
+        <div class="field grid-2">
+          <label class="field">
+            <span>Host (Minecraft of SMB)</span>
+            <input class="input" type="text" id="host" placeholder="mc.example.net of host/share" />
+          </label>
+          <label class="field">
+            <span>Port (optioneel)</span>
+            <input class="input" type="number" id="port" min="1" max="65535" placeholder="25565" />
+          </label>
+        </div>
         <label class="field">
           <span>Korte notitie</span>
           <textarea class="input" id="note" rows="3" placeholder="Optioneel: beschrijf waarvoor de service dient"></textarea>
@@ -128,6 +168,35 @@
         </div>
         <p class="muted">Tip: Gebruik <code>-T</code> voor een upload of <code>-F</code> wanneer je multipart uploads nodig hebt.</p>
       </div>
+    </section>
+
+    <section id="mindmap" class="panel" aria-labelledby="mindmap">
+      <div class="panel__header">
+        <div>
+          <p class="eyebrow">Structuur</p>
+          <h2>Mindmap</h2>
+          <p class="lede">Teken hoe alles samenhangt: servers, shares, game hosts en diensten. Alles wordt lokaal opgeslagen.</p>
+        </div>
+      </div>
+
+      <form id="mapForm" class="stack" autocomplete="off">
+        <label class="field">
+          <span>Titel</span>
+          <input class="input" type="text" id="mapTitle" required placeholder="Bijv. MC cluster" />
+        </label>
+        <label class="field">
+          <span>Onder (kies ouder)</span>
+          <select class="input" id="mapParent">
+            <option value="">Geen (topniveau)</option>
+          </select>
+        </label>
+        <div class="actions">
+          <button type="reset" class="btn ghost">Reset</button>
+          <button type="submit" class="btn primary">Knoop toevoegen</button>
+        </div>
+      </form>
+
+      <div class="mindmap" id="mindmapTree" aria-live="polite"></div>
     </section>
   </main>
 
