@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Losse verkenner</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="page">
+    <main class="container stack">
+      <header class="panel">
+        <p class="eyebrow">Standalone</p>
+        <h1>Losse verkenner voor containers</h1>
+        <p class="lede">
+          Bewaar hier extern containers, VM's of stacks. Exporteer de data en plak de payload in de hoofdsite om de
+          mindmap en verkenner te verrijken.
+        </p>
+      </header>
+
+      <section class="panel stack">
+        <div class="filter-row">
+          <div class="filter">
+            <label for="remoteTypeFilter" class="filter__label">Type</label>
+            <select id="remoteTypeFilter" class="input">
+              <option value="">Alle</option>
+              <option value="docker">Docker</option>
+              <option value="vm">VM</option>
+              <option value="stack">Stack</option>
+              <option value="anders">Overig</option>
+            </select>
+          </div>
+          <div class="filter">
+            <label for="remoteStatusFilter" class="filter__label">Status</label>
+            <select id="remoteStatusFilter" class="input">
+              <option value="">Alles</option>
+              <option value="running">Aan</option>
+              <option value="stopped">Uit</option>
+              <option value="unknown">Onbekend</option>
+            </select>
+          </div>
+          <label class="field field--inline">
+            <span>Zoek op host of naam</span>
+            <input class="input" type="search" id="remoteSearch" placeholder="node-03, traefik, backups" />
+          </label>
+        </div>
+
+        <form id="remoteForm" class="stack" autocomplete="off">
+          <label class="field">
+            <span>Naam</span>
+            <input class="input" type="text" id="remoteName" required placeholder="Bijv. media-stack" />
+          </label>
+          <label class="field">
+            <span>Host / locatie</span>
+            <input class="input" type="text" id="remoteHost" placeholder="node-03, lab-node" />
+          </label>
+          <div class="field grid-2">
+            <label class="field">
+              <span>Type</span>
+              <select class="input" id="remoteType">
+                <option value="docker">Docker</option>
+                <option value="vm">VM</option>
+                <option value="stack">Stack</option>
+                <option value="anders">Overig</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Status</span>
+              <select class="input" id="remoteStatus">
+                <option value="running">Aan</option>
+                <option value="stopped">Uit</option>
+                <option value="unknown">Onbekend</option>
+              </select>
+            </label>
+          </div>
+          <label class="field">
+            <span>Users &amp; permissies</span>
+            <textarea class="input" id="remoteUsers" rows="2" placeholder="Bijv. deploy user, alleen lezen"></textarea>
+          </label>
+          <label class="field">
+            <span>Folders &amp; mounts</span>
+            <input class="input" type="text" id="remoteFolders" placeholder="/opt/stacks, /data/backups" />
+          </label>
+          <label class="field">
+            <span>Poorten / endpoints</span>
+            <input class="input" type="text" id="remotePorts" placeholder="8080, 9443; of https://host:9443" />
+          </label>
+          <label class="field">
+            <span>Notitie</span>
+            <textarea class="input" id="remoteNote" rows="2" placeholder="Bijv. waarom dit los staat"></textarea>
+          </label>
+          <div class="actions">
+            <button type="reset" class="btn ghost">Reset</button>
+            <button type="submit" class="btn primary">Opslaan</button>
+          </div>
+        </form>
+
+        <div class="panel panel--sub stack">
+          <div class="panel__header">
+            <div>
+              <p class="eyebrow">Uitwisseling</p>
+              <h3>Exporteer naar hoofdsite</h3>
+            </div>
+            <button id="exportCopy" type="button" class="btn ghost small">Kopieer payload</button>
+          </div>
+          <p class="muted">Klik op "Kopieer payload" en plak de string in de hoofdsite bij de import-sectie.</p>
+          <textarea id="exportOutput" class="input" rows="3" readonly placeholder="Nog niets opgeslagen"></textarea>
+        </div>
+
+        <div id="remoteList" class="card-grid service-grid" role="list" aria-live="polite"></div>
+        <p class="muted" id="remoteEmpty">Nog geen losse containers bewaard. Vul hierboven host, type en status in.</p>
+      </section>
+    </main>
+    <script src="standalone.js"></script>
+  </body>
+</html>
