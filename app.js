@@ -26,6 +26,9 @@ const standaloneEmpty = document.getElementById('standaloneEmpty');
 const standaloneTypeFilter = document.getElementById('standaloneTypeFilter');
 const standaloneStatusFilter = document.getElementById('standaloneStatusFilter');
 const standaloneSearch = document.getElementById('standaloneSearch');
+const standaloneImport = document.getElementById('standaloneImport');
+const standaloneImportButton = document.getElementById('standaloneImportButton');
+const standaloneImportStatus = document.getElementById('standaloneImportStatus');
 
 const STORAGE_KEY = 'zelfgehoste-links';
 const MAP_STORAGE_KEY = 'zelfgehoste-map';
@@ -73,6 +76,39 @@ function loadStandaloneServices() {
 
 function saveStandaloneServices(entries) {
   localStorage.setItem(STANDALONE_STORAGE_KEY, JSON.stringify(entries));
+}
+
+function mergeStandalonePayload(payload) {
+  if (!payload || !Array.isArray(payload.standalone)) {
+    throw new Error('Geen geldige payload gevonden');
+  }
+
+  const existing = loadStandaloneServices();
+  const incoming = payload.standalone;
+
+  const combined = [...existing];
+  incoming.forEach((entry) => {
+    if (!entry?.name) return;
+    const already = combined.find(
+      (item) => item.name === entry.name && (item.host || '') === (entry.host || '') && item.type === entry.type,
+    );
+    if (!already) {
+      combined.push({
+        name: entry.name,
+        host: entry.host || '',
+        type: entry.type || 'anders',
+        status: entry.status || 'unknown',
+        users: entry.users || '',
+        folders: entry.folders || '',
+        ports: entry.ports || '',
+        note: entry.note || '',
+      });
+    }
+  });
+
+  saveStandaloneServices(combined);
+  renderStandalone(combined);
+  return combined.length - existing.length;
 }
 
 function formatType(type) {
@@ -550,6 +586,24 @@ function handleStandaloneSubmit(event) {
   standaloneForm.reset();
 }
 
+function handleStandaloneImport() {
+  if (!standaloneImport || !standaloneImportButton || !standaloneImportStatus) return;
+  const raw = standaloneImport.value.trim();
+  if (!raw) {
+    standaloneImportStatus.textContent = 'Plak eerst een payload.';
+    return;
+  }
+
+  try {
+    const payload = JSON.parse(atob(raw));
+    const added = mergeStandalonePayload(payload);
+    standaloneImportStatus.textContent = `Geïmporteerd. ${added} nieuwe items toegevoegd.`;
+    standaloneImport.value = '';
+  } catch (error) {
+    standaloneImportStatus.textContent = 'Kon payload niet lezen. Controleer of je de volledige string hebt gekopieerd.';
+  }
+}
+
 function handleStandaloneAction(event) {
   const action = event.target.dataset.action;
   if (!action) return;
@@ -593,6 +647,7 @@ function bootstrap() {
   if (standaloneTypeFilter) standaloneTypeFilter.addEventListener('change', renderStandalone);
   if (standaloneStatusFilter) standaloneStatusFilter.addEventListener('change', renderStandalone);
   if (standaloneSearch) standaloneSearch.addEventListener('input', renderStandalone);
+  if (standaloneImportButton) standaloneImportButton.addEventListener('click', handleStandaloneImport);
   renderStandalone();
 }
 

@@ -10,6 +10,7 @@ Een lichte, statische pagina om al je zelfgehoste websites te bundelen en snel e
 - Upload-tabblad dat een curl-commando en downloadlink samenstelt op basis van het gekozen endpoint en bestand.
 - Verkenner-tabblad om services/containers vast te leggen met host, permissies, folders, poorten en direct aan de mindmap te koppelen.
 - Standalone-verkenner voor losse containers of stacks, met filters op type/status en zoeken op host of naam.
+- Losse `standalone-explorer.html` die je elders kunt draaien en waarvan je een payload kunt kopiëren om in de hoofdsite te importeren.
 
 ## Ontwikkeling
 Start een eenvoudige server om de pagina lokaal te bekijken:
