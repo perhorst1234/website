@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 const fs = require('fs');
 const path = require('path');
+const http = require('http');
+const os = require('os');
+const { execSync } = require('child_process');
 
 const STORAGE_PATH = path.join(__dirname, 'headless-standalone.json');
 
@@ -69,6 +72,8 @@ Gebruik:
   node headless-explorer.js add --name NAME --host HOST [--type TYPE] [--status STATUS] [--users USERS] [--folders PATHS] [--ports PORTS] [--note NOTE]
   node headless-explorer.js export > payload.json
   node headless-explorer.js import <payload.json
+  node headless-explorer.js discover [--save]
+  node headless-explorer.js serve [--port 4070]
 `);
 }
 
@@ -126,6 +131,107 @@ function importCommand() {
   console.log(`Geïmporteerd: ${next.length - existing.length} nieuw(e) item(s). Totaal ${next.length}.`);
 }
 
+function discoverDocker() {
+  try {
+    const raw = execSync("docker ps --format '{{.Names}}|{{.Status}}|{{.Ports}}|{{.Image}}'", {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    return raw
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        const [name, statusRaw, ports, image] = line.split('|');
+        const status = statusRaw?.toLowerCase().includes('up') ? 'running' : 'stopped';
+        return normalizeEntry({
+          name,
+          host: os.hostname(),
+          type: 'docker',
+          status,
+          users: '',
+          folders: '',
+          ports: ports || '',
+          note: image ? `Image: ${image}` : '',
+        });
+      });
+  } catch (error) {
+    return [];
+  }
+}
+
+function discoverCommand(args) {
+  const discovered = discoverDocker();
+  if (!discovered.length) {
+    console.log('Geen containers gevonden of docker niet beschikbaar.');
+    return;
+  }
+  console.table(discovered);
+  if (args.save) {
+    const merged = merge(loadEntries(), discovered);
+    saveEntries(merged);
+    console.log(`Opgeslagen ${discovered.length} gevonden item(s). Totaal ${merged.length}.`);
+  }
+}
+
+function startServer(args) {
+  const port = Number(args.port || 4070);
+  const server = http.createServer((req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+
+    if (req.method === 'GET' && req.url === '/standalone') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ standalone: loadEntries() }));
+      return;
+    }
+
+    if (req.method === 'GET' && req.url === '/discover') {
+      const discovered = discoverDocker();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ standalone: discovered, host: os.hostname(), scannedAt: new Date().toISOString() }));
+      return;
+    }
+
+    if (req.method === 'POST' && req.url === '/standalone') {
+      let body = '';
+      req.on('data', (chunk) => (body += chunk));
+      req.on('end', () => {
+        try {
+          const payload = JSON.parse(body || '{}');
+          if (!Array.isArray(payload?.standalone)) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Payload mist standalone-array' }));
+            return;
+          }
+          const next = merge(loadEntries(), payload.standalone);
+          saveEntries(next);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ stored: next.length }));
+        } catch (error) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Kon payload niet lezen' }));
+        }
+      });
+      return;
+    }
+
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Niet gevonden' }));
+  });
+
+  server.listen(port, () => {
+    console.log(`Remote verkenner API draait op http://0.0.0.0:${port}`);
+    console.log('Endpoints: GET /standalone, POST /standalone, GET /discover');
+  });
+}
+
 function main() {
   const [command, ...rest] = process.argv.slice(2);
   const args = parseArgs(rest);
@@ -142,6 +248,12 @@ function main() {
       break;
     case 'import':
       importCommand();
+      break;
+    case 'discover':
+      discoverCommand(args);
+      break;
+    case 'serve':
+      startServer(args);
       break;
     default:
       printHelp();

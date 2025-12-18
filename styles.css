@@ -143,6 +143,7 @@ a { color: var(--accent-strong); }
   gap: 6px;
 }
 .status { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+.status--error { color: #e98686; }
 .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); display: inline-block; }
 .dot.online { background: #72e2a6; }
 .dot.offline { background: #f17373; }
@@ -178,6 +179,8 @@ a { color: var(--accent-strong); }
 .muted strong { color: #fff; }
 
 .stack { display: grid; gap: 14px; max-width: 640px; }
+.checkbox-row { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+.checkbox-row input { width: 16px; height: 16px; }
 .field { display: grid; gap: 6px; font-weight: 600; color: var(--text); }
 .field--inline { flex: 1; min-width: 220px; }
 .input {
@@ -214,6 +217,7 @@ a { color: var(--accent-strong); }
 }
 
 .actions { display: flex; gap: 12px; justify-content: flex-end; flex-wrap: wrap; }
+.actions--wrap { flex-wrap: wrap; }
 
 .result {
   margin-top: 20px;

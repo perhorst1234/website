@@ -29,6 +29,11 @@ const standaloneSearch = document.getElementById('standaloneSearch');
 const standaloneImport = document.getElementById('standaloneImport');
 const standaloneImportButton = document.getElementById('standaloneImportButton');
 const standaloneImportStatus = document.getElementById('standaloneImportStatus');
+const remoteEndpointInput = document.getElementById('remoteEndpoint');
+const remoteSyncButton = document.getElementById('remoteSyncButton');
+const remoteDiscoverButton = document.getElementById('remoteDiscoverButton');
+const remoteAutoDiscover = document.getElementById('remoteAutoDiscover');
+const remoteStatus = document.getElementById('remoteStatus');
 
 const STORAGE_KEY = 'zelfgehoste-links';
 const MAP_STORAGE_KEY = 'zelfgehoste-map';
@@ -109,6 +114,32 @@ function mergeStandalonePayload(payload) {
   saveStandaloneServices(combined);
   renderStandalone(combined);
   return combined.length - existing.length;
+}
+
+function remoteBase() {
+  const base = remoteEndpointInput?.value?.trim();
+  if (!base) return '';
+  return base.replace(/\/$/, '');
+}
+
+function setRemoteStatus(message, isError = false) {
+  if (!remoteStatus) return;
+  remoteStatus.textContent = message || '';
+  remoteStatus.classList.toggle('status--error', Boolean(isError));
+}
+
+async function fetchRemote(url, options = {}) {
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(options.headers || {}),
+    },
+  });
+  if (!response.ok) {
+    throw new Error(`Remote antwoord ${response.status}`);
+  }
+  return response.json();
 }
 
 function formatType(type) {
@@ -502,6 +533,53 @@ function renderStandalone() {
   standaloneList?.toggleAttribute('data-has-items', hasItems);
 }
 
+let autoDiscoverInterval;
+
+async function syncRemoteStandalone() {
+  const base = remoteBase();
+  if (!base) {
+    setRemoteStatus('Vul een remote endpoint in (bijv. http://ip:4070).', true);
+    return;
+  }
+  try {
+    setRemoteStatus('Ophalen van remote standalone-items...');
+    const payload = await fetchRemote(`${base}/standalone`);
+    const added = mergeStandalonePayload(payload);
+    setRemoteStatus(`Geüpdatet met ${added} nieuw(e) item(s) vanaf ${base}.`);
+  } catch (error) {
+    setRemoteStatus(`Remote sync mislukt: ${error.message}`, true);
+  }
+}
+
+async function runRemoteDiscovery() {
+  const base = remoteBase();
+  if (!base) {
+    setRemoteStatus('Vul een remote endpoint in (bijv. http://ip:4070).', true);
+    return;
+  }
+  try {
+    setRemoteStatus('Discovery uitvoeren op remote host...');
+    const payload = await fetchRemote(`${base}/discover`);
+    const added = mergeStandalonePayload(payload);
+    setRemoteStatus(`Discovery gereed: ${added} nieuw(e) item(s) gevonden op ${base}.`);
+  } catch (error) {
+    setRemoteStatus(`Discovery mislukt: ${error.message}`, true);
+  }
+}
+
+function toggleAutoDiscovery() {
+  if (autoDiscoverInterval) {
+    clearInterval(autoDiscoverInterval);
+  }
+  if (remoteAutoDiscover?.checked) {
+    runRemoteDiscovery();
+    autoDiscoverInterval = setInterval(runRemoteDiscovery, 60000);
+    setRemoteStatus('Automatisch ontdekken staat aan (elke 60s).');
+  } else {
+    setRemoteStatus('Automatisch ontdekken is uitgeschakeld.');
+  }
+}
+
 function handleServiceSubmit(event) {
   event.preventDefault();
   const name = document.getElementById('serviceName').value.trim();
@@ -648,6 +726,9 @@ function bootstrap() {
   if (standaloneStatusFilter) standaloneStatusFilter.addEventListener('change', renderStandalone);
   if (standaloneSearch) standaloneSearch.addEventListener('input', renderStandalone);
   if (standaloneImportButton) standaloneImportButton.addEventListener('click', handleStandaloneImport);
+  if (remoteSyncButton) remoteSyncButton.addEventListener('click', syncRemoteStandalone);
+  if (remoteDiscoverButton) remoteDiscoverButton.addEventListener('click', runRemoteDiscovery);
+  if (remoteAutoDiscover) remoteAutoDiscover.addEventListener('change', toggleAutoDiscovery);
   renderStandalone();
 }
 

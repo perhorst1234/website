@@ -294,6 +294,29 @@
         <p id="standaloneImportStatus" class="muted" aria-live="polite"></p>
       </div>
 
+      <div class="panel panel--sub stack">
+        <div class="panel__header">
+          <div>
+            <p class="eyebrow">Internet</p>
+            <h3>Verbind met remote verkenner</h3>
+            <p class="muted">Koppel via HTTP(S) naar een host waar de headless verkenner draait met de <code>serve</code>-optie.</p>
+          </div>
+          <div class="actions actions--wrap">
+            <button id="remoteSyncButton" type="button" class="btn ghost small">Pull remote</button>
+            <button id="remoteDiscoverButton" type="button" class="btn primary small">Discovery</button>
+          </div>
+        </div>
+        <label class="field">
+          <span>Remote endpoint</span>
+          <input class="input" type="url" id="remoteEndpoint" placeholder="http://remote-host:4070" />
+        </label>
+        <label class="checkbox-row">
+          <input type="checkbox" id="remoteAutoDiscover" />
+          <span>Automatisch elke minuut discovery uitvoeren</span>
+        </label>
+        <p id="remoteStatus" class="muted" aria-live="polite"></p>
+      </div>
+
       <div class="filter-row">
         <div class="filter">
           <label for="standaloneTypeFilter" class="filter__label">Type</label>
