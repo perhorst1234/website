@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Zelfgehoste Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="hero">
+    <div class="hero__content">
+      <p class="eyebrow">Zelfgehoste hub</p>
+      <h1>Bundel al je eigen services op één plek</h1>
+      <p class="lede">
+        Sla links op naar je zelfgehoste websites, groepeer ze per omgeving en genereer direct
+        een curl-commando wanneer je een bestand wilt delen.
+      </p>
+      <div class="hero__actions">
+        <button class="btn primary" data-tab-target="#links">Bekijk links</button>
+        <button class="btn ghost" data-tab-target="#upload">Upload met curl</button>
+      </div>
+    </div>
+    <div class="hero__badge">
+      <div class="badge__icon">⚡️</div>
+      <div>
+        <p class="badge__title">Sneller schakelen</p>
+        <p class="badge__text">Je links en bestanden direct binnen handbereik.</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="shell">
+    <nav class="tabs" aria-label="Hoofdsecties">
+      <button class="tab active" data-tab-target="#links">Mijn links</button>
+      <button class="tab" data-tab-target="#add">Nieuwe link</button>
+      <button class="tab" data-tab-target="#upload">Upload &amp; curl</button>
+      <button class="tab" data-tab-target="#mindmap">Mindmap</button>
+      <button class="tab" data-tab-target="#explorer">Verkenner</button>
+      <button class="tab" data-tab-target="#standalone">Standalone verkenner</button>
+    </nav>
+
+    <section id="links" class="panel active" aria-labelledby="links">
+      <header class="panel__header">
+        <div>
+          <p class="eyebrow">Overzicht</p>
+          <h2>Zelfgehoste websites</h2>
+          <p class="lede">Bewaar de URL, omgeving en een korte notitie. Alles blijft lokaal opgeslagen in je browser.</p>
+        </div>
+        <div class="filter-row">
+          <div class="filter">
+            <label for="filterTag" class="filter__label">Filter op omgeving</label>
+            <select id="filterTag" class="input">
+              <option value="">Alle</option>
+            </select>
+          </div>
+          <div class="filter">
+            <label for="filterType" class="filter__label">Type</label>
+            <select id="filterType" class="input">
+              <option value="">Alle</option>
+              <option value="web">Website</option>
+              <option value="smb">SMB share</option>
+              <option value="minecraft">Minecraft server</option>
+              <option value="anders">Overig</option>
+            </select>
+          </div>
+          <label class="switch" title="Groepeer op server">
+            <input type="checkbox" id="groupToggle" />
+            <span>Groepeer op server</span>
+          </label>
+        </div>
+      </header>
+      <div id="linkList" class="card-grid" role="list"></div>
+      <p class="muted" id="emptyState">Nog geen links toegevoegd. Voeg je eerste service toe op het tabblad "Nieuwe link".</p>
+    </section>
+
+    <section id="add" class="panel" aria-labelledby="add">
+      <div class="panel__header">
+        <div>
+          <p class="eyebrow">Toevoegen</p>
+          <h2>Nieuwe link</h2>
+          <p class="lede">Sla een URL op met naam, omgeving en optioneel een beschrijving.</p>
+        </div>
+      </div>
+      <form id="linkForm" class="stack" autocomplete="off">
+        <label class="field">
+          <span>Naam</span>
+          <input class="input" type="text" id="name" required placeholder="Bijv. Home Assistant" />
+        </label>
+        <label class="field">
+          <span>URL</span>
+          <input class="input" type="url" id="url" required placeholder="https://" />
+        </label>
+        <label class="field">
+          <span>Type</span>
+          <select class="input" id="type">
+            <option value="web">Website</option>
+            <option value="smb">SMB share</option>
+            <option value="minecraft">Minecraft server</option>
+            <option value="anders">Overig</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Omgeving / tag</span>
+          <input class="input" type="text" id="tag" required placeholder="Bijv. Thuis, Lab, Werk" />
+        </label>
+        <label class="field">
+          <span>Server / groep</span>
+          <input class="input" type="text" id="serverGroup" placeholder="Bijv. NAS-01, Proxmox, MC-cluster" />
+        </label>
+        <div class="field grid-2">
+          <label class="field">
+            <span>Host (Minecraft of SMB)</span>
+            <input class="input" type="text" id="host" placeholder="mc.example.net of host/share" />
+          </label>
+          <label class="field">
+            <span>Port (optioneel)</span>
+            <input class="input" type="number" id="port" min="1" max="65535" placeholder="25565" />
+          </label>
+        </div>
+        <label class="field">
+          <span>Korte notitie</span>
+          <textarea class="input" id="note" rows="3" placeholder="Optioneel: beschrijf waarvoor de service dient"></textarea>
+        </label>
+        <div class="actions">
+          <button type="reset" class="btn ghost">Reset</button>
+          <button type="submit" class="btn primary">Opslaan</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="upload" class="panel" aria-labelledby="upload">
+      <div class="panel__header">
+        <div>
+          <p class="eyebrow">Delen</p>
+          <h2>Upload &amp; curl link</h2>
+          <p class="lede">Selecteer een bestand, kies een doel-URL en krijg direct het curl-commando dat je kunt plakken in een script.</p>
+        </div>
+      </div>
+      <form id="uploadForm" class="stack" autocomplete="off">
+        <label class="field">
+          <span>Bestand</span>
+          <input class="input" type="file" id="fileInput" required />
+        </label>
+        <label class="field">
+          <span>Upload endpoint</span>
+          <input class="input" type="url" id="endpoint" required placeholder="https://uploads.example.com" />
+        </label>
+        <div class="actions">
+          <button type="reset" class="btn ghost">Reset</button>
+          <button type="submit" class="btn primary">Genereer curl-link</button>
+        </div>
+      </form>
+      <div id="uploadResult" class="result" hidden>
+        <div class="result__row">
+          <span class="result__label">Curl-commando</span>
+          <div class="result__value">
+            <code id="curlCommand"></code>
+            <button class="icon-button" type="button" data-copy-target="curlCommand" aria-label="Kopieer curl commando">📋</button>
+          </div>
+        </div>
+        <div class="result__row">
+          <span class="result__label">Download link</span>
+          <div class="result__value">
+            <code id="downloadLink"></code>
+            <button class="icon-button" type="button" data-copy-target="downloadLink" aria-label="Kopieer download link">📋</button>
+          </div>
+        </div>
+        <p class="muted">Tip: Gebruik <code>-T</code> voor een upload of <code>-F</code> wanneer je multipart uploads nodig hebt.</p>
+      </div>
+    </section>
+
+    <section id="mindmap" class="panel" aria-labelledby="mindmap">
+      <div class="panel__header">
+        <div>
+          <p class="eyebrow">Structuur</p>
+          <h2>Mindmap</h2>
+          <p class="lede">Teken hoe alles samenhangt: servers, shares, game hosts en diensten. Alles wordt lokaal opgeslagen.</p>
+        </div>
+      </div>
+
+      <form id="mapForm" class="stack" autocomplete="off">
+        <label class="field">
+          <span>Titel</span>
+          <input class="input" type="text" id="mapTitle" required placeholder="Bijv. MC cluster" />
+        </label>
+        <label class="field">
+          <span>Onder (kies ouder)</span>
+          <select class="input" id="mapParent">
+            <option value="">Geen (topniveau)</option>
+          </select>
+        </label>
+        <div class="actions">
+          <button type="reset" class="btn ghost">Reset</button>
+          <button type="submit" class="btn primary">Knoop toevoegen</button>
+        </div>
+      </form>
+
+      <div class="mindmap" id="mindmapTree" aria-live="polite"></div>
+    </section>
+
+    <section id="explorer" class="panel" aria-labelledby="explorer">
+      <div class="panel__header">
+        <div>
+          <p class="eyebrow">Inspectie</p>
+          <h2>Verkenner voor services en containers</h2>
+          <p class="lede">Leg bij welke server of container iets hoort, welke users erbij mogen, welke folders worden gebruikt en of het draait. Koppel je bevinding direct aan de mindmap.</p>
+        </div>
+      </div>
+
+      <form id="serviceForm" class="stack" autocomplete="off">
+        <label class="field">
+          <span>Naam</span>
+          <input class="input" type="text" id="serviceName" required placeholder="Bijv. Docker: jellyfin" />
+        </label>
+        <label class="field">
+          <span>Host / locatie</span>
+          <input class="input" type="text" id="serviceHost" placeholder="nas.local, node-01, container-id" />
+        </label>
+        <div class="field grid-2">
+          <label class="field">
+            <span>Type</span>
+            <select class="input" id="serviceType">
+              <option value="docker">Docker container</option>
+              <option value="service">Service</option>
+              <option value="share">Share</option>
+              <option value="game">Game server</option>
+              <option value="anders">Overig</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Status</span>
+            <select class="input" id="serviceStatus">
+              <option value="running">Aan</option>
+              <option value="stopped">Uit</option>
+              <option value="unknown">Onbekend</option>
+            </select>
+          </label>
+        </div>
+        <label class="field">
+          <span>Users &amp; permissies</span>
+          <textarea class="input" id="serviceUsers" rows="2" placeholder="Bijv. media-groep, alleen lezen, admin: jij"></textarea>
+        </label>
+        <label class="field">
+          <span>Folders &amp; mounts</span>
+          <input class="input" type="text" id="serviceFolders" placeholder="/srv/media, /data/config" />
+        </label>
+        <label class="field">
+          <span>Poorten / endpoints</span>
+          <input class="input" type="text" id="servicePorts" placeholder="8096, 8920; of smb://nas/media" />
+        </label>
+        <label class="field">
+          <span>Notitie</span>
+          <textarea class="input" id="serviceNote" rows="2" placeholder="Korte beschrijving of afhankelijkheden"></textarea>
+        </label>
+        <label class="field">
+          <span>Koppel aan mindmap (optioneel)</span>
+          <select class="input" id="serviceMapParent">
+            <option value="">Geen (topniveau)</option>
+          </select>
+        </label>
+        <div class="actions">
+          <button type="reset" class="btn ghost">Reset</button>
+          <button type="submit" class="btn primary">Opslaan in verkenner</button>
+        </div>
+      </form>
+
+      <div id="serviceList" class="card-grid service-grid" role="list" aria-live="polite"></div>
+      <p class="muted" id="serviceEmpty">Nog geen services vastgelegd. Vul hierboven host, type en permissies in.</p>
+    </section>
+
+    <section id="standalone" class="panel" aria-labelledby="standalone">
+      <div class="panel__header">
+        <div>
+          <p class="eyebrow">Losstaand</p>
+          <h2>Standalone verkenner voor andere containers</h2>
+          <p class="lede">Beheer containers die niet in je hoofdstructuur passen. Bewaar host, status, permissies en paden in een eigen lijst.</p>
+          <p class="muted">Gebruik <a href="standalone-explorer.html" target="_blank" rel="noreferrer">de losse verkenner</a> op een andere host en plak de export hieronder om alles samen te brengen.</p>
+        </div>
+      </div>
+
+      <div class="panel panel--sub stack">
+        <div class="panel__header">
+          <div>
+            <p class="eyebrow">Koppelen</p>
+            <h3>Importeer payload van losse verkenner</h3>
+          </div>
+          <button id="standaloneImportButton" type="button" class="btn ghost small">Importeer</button>
+        </div>
+        <p class="muted">Plak de gekopieerde string uit de losstaande verkenner. De entries worden samengevoegd in deze lijst.</p>
+        <textarea id="standaloneImport" class="input" rows="3" placeholder="Plak hier de export-payload"></textarea>
+        <p id="standaloneImportStatus" class="muted" aria-live="polite"></p>
+      </div>
+
+      <div class="filter-row">
+        <div class="filter">
+          <label for="standaloneTypeFilter" class="filter__label">Type</label>
+          <select id="standaloneTypeFilter" class="input">
+            <option value="">Alle</option>
+            <option value="docker">Docker</option>
+            <option value="vm">VM</option>
+            <option value="stack">Stack</option>
+            <option value="anders">Overig</option>
+          </select>
+        </div>
+        <div class="filter">
+          <label for="standaloneStatusFilter" class="filter__label">Status</label>
+          <select id="standaloneStatusFilter" class="input">
+            <option value="">Alles</option>
+            <option value="running">Aan</option>
+            <option value="stopped">Uit</option>
+            <option value="unknown">Onbekend</option>
+          </select>
+        </div>
+        <label class="field field--inline">
+          <span>Zoek op host of naam</span>
+          <input class="input" type="search" id="standaloneSearch" placeholder="node-02, traefik, media" />
+        </label>
+      </div>
+
+      <form id="standaloneForm" class="stack" autocomplete="off">
+        <label class="field">
+          <span>Naam</span>
+          <input class="input" type="text" id="standaloneName" required placeholder="Bijv. traefik-container" />
+        </label>
+        <label class="field">
+          <span>Host / locatie</span>
+          <input class="input" type="text" id="standaloneHost" placeholder="node-02, k3s-worker" />
+        </label>
+        <div class="field grid-2">
+          <label class="field">
+            <span>Type</span>
+            <select class="input" id="standaloneType">
+              <option value="docker">Docker</option>
+              <option value="vm">VM</option>
+              <option value="stack">Stack</option>
+              <option value="anders">Overig</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Status</span>
+            <select class="input" id="standaloneStatus">
+              <option value="running">Aan</option>
+              <option value="stopped">Uit</option>
+              <option value="unknown">Onbekend</option>
+            </select>
+          </label>
+        </div>
+        <label class="field">
+          <span>Users &amp; permissies</span>
+          <textarea class="input" id="standaloneUsers" rows="2" placeholder="Bijv. deploy user, alleen lezen"></textarea>
+        </label>
+        <label class="field">
+          <span>Folders &amp; mounts</span>
+          <input class="input" type="text" id="standaloneFolders" placeholder="/opt/stack, /data/shared" />
+        </label>
+        <label class="field">
+          <span>Poorten / endpoints</span>
+          <input class="input" type="text" id="standalonePorts" placeholder="8080, 9000; of http://host:9000" />
+        </label>
+        <label class="field">
+          <span>Notitie</span>
+          <textarea class="input" id="standaloneNote" rows="2" placeholder="Waarom staat dit los van de mindmap?"></textarea>
+        </label>
+        <div class="actions">
+          <button type="reset" class="btn ghost">Reset</button>
+          <button type="submit" class="btn primary">Opslaan in standalone verkenner</button>
+        </div>
+      </form>
+
+      <div id="standaloneList" class="card-grid service-grid" role="list" aria-live="polite"></div>
+      <p class="muted" id="standaloneEmpty">Nog geen losse containers vastgelegd. Voeg hierboven een item toe.</p>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Links worden lokaal opgeslagen in je browser. De upload-tab geeft voorbeeldcommando's en deelt niets extern.</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
