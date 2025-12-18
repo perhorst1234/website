@@ -149,8 +149,37 @@ a { color: var(--accent-strong); }
 .card__actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
 .btn.small { padding: 8px 12px; font-size: 14px; }
 
+.card.grid-row { display: grid; grid-template-columns: 1fr; gap: 0.6rem; }
+.card__meta--two-col { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.5rem; }
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.status-chip .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  background: #888;
+}
+
+.status-chip .dot.online { background: #2ad27b; box-shadow: 0 0 0 4px rgba(42, 210, 123, 0.18); }
+.status-chip .dot.offline { background: #e45757; box-shadow: 0 0 0 4px rgba(228, 87, 87, 0.18); }
+
+.service-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1rem; }
+.muted strong { color: #fff; }
+
 .stack { display: grid; gap: 14px; max-width: 640px; }
 .field { display: grid; gap: 6px; font-weight: 600; color: var(--text); }
+.field--inline { flex: 1; min-width: 220px; }
 .input {
   width: 100%;
   padding: 12px 14px;

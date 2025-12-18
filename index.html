@@ -38,6 +38,8 @@
       <button class="tab" data-tab-target="#add">Nieuwe link</button>
       <button class="tab" data-tab-target="#upload">Upload &amp; curl</button>
       <button class="tab" data-tab-target="#mindmap">Mindmap</button>
+      <button class="tab" data-tab-target="#explorer">Verkenner</button>
+      <button class="tab" data-tab-target="#standalone">Standalone verkenner</button>
     </nav>
 
     <section id="links" class="panel active" aria-labelledby="links">
@@ -197,6 +199,179 @@
       </form>
 
       <div class="mindmap" id="mindmapTree" aria-live="polite"></div>
+    </section>
+
+    <section id="explorer" class="panel" aria-labelledby="explorer">
+      <div class="panel__header">
+        <div>
+          <p class="eyebrow">Inspectie</p>
+          <h2>Verkenner voor services en containers</h2>
+          <p class="lede">Leg bij welke server of container iets hoort, welke users erbij mogen, welke folders worden gebruikt en of het draait. Koppel je bevinding direct aan de mindmap.</p>
+        </div>
+      </div>
+
+      <form id="serviceForm" class="stack" autocomplete="off">
+        <label class="field">
+          <span>Naam</span>
+          <input class="input" type="text" id="serviceName" required placeholder="Bijv. Docker: jellyfin" />
+        </label>
+        <label class="field">
+          <span>Host / locatie</span>
+          <input class="input" type="text" id="serviceHost" placeholder="nas.local, node-01, container-id" />
+        </label>
+        <div class="field grid-2">
+          <label class="field">
+            <span>Type</span>
+            <select class="input" id="serviceType">
+              <option value="docker">Docker container</option>
+              <option value="service">Service</option>
+              <option value="share">Share</option>
+              <option value="game">Game server</option>
+              <option value="anders">Overig</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Status</span>
+            <select class="input" id="serviceStatus">
+              <option value="running">Aan</option>
+              <option value="stopped">Uit</option>
+              <option value="unknown">Onbekend</option>
+            </select>
+          </label>
+        </div>
+        <label class="field">
+          <span>Users &amp; permissies</span>
+          <textarea class="input" id="serviceUsers" rows="2" placeholder="Bijv. media-groep, alleen lezen, admin: jij"></textarea>
+        </label>
+        <label class="field">
+          <span>Folders &amp; mounts</span>
+          <input class="input" type="text" id="serviceFolders" placeholder="/srv/media, /data/config" />
+        </label>
+        <label class="field">
+          <span>Poorten / endpoints</span>
+          <input class="input" type="text" id="servicePorts" placeholder="8096, 8920; of smb://nas/media" />
+        </label>
+        <label class="field">
+          <span>Notitie</span>
+          <textarea class="input" id="serviceNote" rows="2" placeholder="Korte beschrijving of afhankelijkheden"></textarea>
+        </label>
+        <label class="field">
+          <span>Koppel aan mindmap (optioneel)</span>
+          <select class="input" id="serviceMapParent">
+            <option value="">Geen (topniveau)</option>
+          </select>
+        </label>
+        <div class="actions">
+          <button type="reset" class="btn ghost">Reset</button>
+          <button type="submit" class="btn primary">Opslaan in verkenner</button>
+        </div>
+      </form>
+
+      <div id="serviceList" class="card-grid service-grid" role="list" aria-live="polite"></div>
+      <p class="muted" id="serviceEmpty">Nog geen services vastgelegd. Vul hierboven host, type en permissies in.</p>
+    </section>
+
+    <section id="standalone" class="panel" aria-labelledby="standalone">
+      <div class="panel__header">
+        <div>
+          <p class="eyebrow">Losstaand</p>
+          <h2>Standalone verkenner voor andere containers</h2>
+          <p class="lede">Beheer containers die niet in je hoofdstructuur passen. Bewaar host, status, permissies en paden in een eigen lijst.</p>
+          <p class="muted">Gebruik <a href="standalone-explorer.html" target="_blank" rel="noreferrer">de losse verkenner</a> op een andere host en plak de export hieronder om alles samen te brengen.</p>
+        </div>
+      </div>
+
+      <div class="panel panel--sub stack">
+        <div class="panel__header">
+          <div>
+            <p class="eyebrow">Koppelen</p>
+            <h3>Importeer payload van losse verkenner</h3>
+          </div>
+          <button id="standaloneImportButton" type="button" class="btn ghost small">Importeer</button>
+        </div>
+        <p class="muted">Plak de gekopieerde string uit de losstaande verkenner. De entries worden samengevoegd in deze lijst.</p>
+        <textarea id="standaloneImport" class="input" rows="3" placeholder="Plak hier de export-payload"></textarea>
+        <p id="standaloneImportStatus" class="muted" aria-live="polite"></p>
+      </div>
+
+      <div class="filter-row">
+        <div class="filter">
+          <label for="standaloneTypeFilter" class="filter__label">Type</label>
+          <select id="standaloneTypeFilter" class="input">
+            <option value="">Alle</option>
+            <option value="docker">Docker</option>
+            <option value="vm">VM</option>
+            <option value="stack">Stack</option>
+            <option value="anders">Overig</option>
+          </select>
+        </div>
+        <div class="filter">
+          <label for="standaloneStatusFilter" class="filter__label">Status</label>
+          <select id="standaloneStatusFilter" class="input">
+            <option value="">Alles</option>
+            <option value="running">Aan</option>
+            <option value="stopped">Uit</option>
+            <option value="unknown">Onbekend</option>
+          </select>
+        </div>
+        <label class="field field--inline">
+          <span>Zoek op host of naam</span>
+          <input class="input" type="search" id="standaloneSearch" placeholder="node-02, traefik, media" />
+        </label>
+      </div>
+
+      <form id="standaloneForm" class="stack" autocomplete="off">
+        <label class="field">
+          <span>Naam</span>
+          <input class="input" type="text" id="standaloneName" required placeholder="Bijv. traefik-container" />
+        </label>
+        <label class="field">
+          <span>Host / locatie</span>
+          <input class="input" type="text" id="standaloneHost" placeholder="node-02, k3s-worker" />
+        </label>
+        <div class="field grid-2">
+          <label class="field">
+            <span>Type</span>
+            <select class="input" id="standaloneType">
+              <option value="docker">Docker</option>
+              <option value="vm">VM</option>
+              <option value="stack">Stack</option>
+              <option value="anders">Overig</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Status</span>
+            <select class="input" id="standaloneStatus">
+              <option value="running">Aan</option>
+              <option value="stopped">Uit</option>
+              <option value="unknown">Onbekend</option>
+            </select>
+          </label>
+        </div>
+        <label class="field">
+          <span>Users &amp; permissies</span>
+          <textarea class="input" id="standaloneUsers" rows="2" placeholder="Bijv. deploy user, alleen lezen"></textarea>
+        </label>
+        <label class="field">
+          <span>Folders &amp; mounts</span>
+          <input class="input" type="text" id="standaloneFolders" placeholder="/opt/stack, /data/shared" />
+        </label>
+        <label class="field">
+          <span>Poorten / endpoints</span>
+          <input class="input" type="text" id="standalonePorts" placeholder="8080, 9000; of http://host:9000" />
+        </label>
+        <label class="field">
+          <span>Notitie</span>
+          <textarea class="input" id="standaloneNote" rows="2" placeholder="Waarom staat dit los van de mindmap?"></textarea>
+        </label>
+        <div class="actions">
+          <button type="reset" class="btn ghost">Reset</button>
+          <button type="submit" class="btn primary">Opslaan in standalone verkenner</button>
+        </div>
+      </form>
+
+      <div id="standaloneList" class="card-grid service-grid" role="list" aria-live="polite"></div>
+      <p class="muted" id="standaloneEmpty">Nog geen losse containers vastgelegd. Voeg hierboven een item toe.</p>
     </section>
   </main>
 

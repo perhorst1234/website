@@ -16,9 +16,24 @@ const mapForm = document.getElementById('mapForm');
 const mapTitle = document.getElementById('mapTitle');
 const mapParent = document.getElementById('mapParent');
 const mindmapTree = document.getElementById('mindmapTree');
+const serviceForm = document.getElementById('serviceForm');
+const serviceMapParent = document.getElementById('serviceMapParent');
+const serviceList = document.getElementById('serviceList');
+const serviceEmpty = document.getElementById('serviceEmpty');
+const standaloneForm = document.getElementById('standaloneForm');
+const standaloneList = document.getElementById('standaloneList');
+const standaloneEmpty = document.getElementById('standaloneEmpty');
+const standaloneTypeFilter = document.getElementById('standaloneTypeFilter');
+const standaloneStatusFilter = document.getElementById('standaloneStatusFilter');
+const standaloneSearch = document.getElementById('standaloneSearch');
+const standaloneImport = document.getElementById('standaloneImport');
+const standaloneImportButton = document.getElementById('standaloneImportButton');
+const standaloneImportStatus = document.getElementById('standaloneImportStatus');
 
 const STORAGE_KEY = 'zelfgehoste-links';
 const MAP_STORAGE_KEY = 'zelfgehoste-map';
+const SERVICE_STORAGE_KEY = 'zelfgehoste-services';
+const STANDALONE_STORAGE_KEY = 'zelfgehoste-standalone';
 
 function loadLinks() {
   const stored = localStorage.getItem(STORAGE_KEY);
@@ -33,6 +48,67 @@ function loadLinks() {
 
 function saveLinks(links) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(links));
+}
+
+function loadServices() {
+  const stored = localStorage.getItem(SERVICE_STORAGE_KEY);
+  try {
+    return stored ? JSON.parse(stored) : [];
+  } catch (error) {
+    localStorage.removeItem(SERVICE_STORAGE_KEY);
+    return [];
+  }
+}
+
+function saveServices(services) {
+  localStorage.setItem(SERVICE_STORAGE_KEY, JSON.stringify(services));
+}
+
+function loadStandaloneServices() {
+  const stored = localStorage.getItem(STANDALONE_STORAGE_KEY);
+  try {
+    return stored ? JSON.parse(stored) : [];
+  } catch (error) {
+    localStorage.removeItem(STANDALONE_STORAGE_KEY);
+    return [];
+  }
+}
+
+function saveStandaloneServices(entries) {
+  localStorage.setItem(STANDALONE_STORAGE_KEY, JSON.stringify(entries));
+}
+
+function mergeStandalonePayload(payload) {
+  if (!payload || !Array.isArray(payload.standalone)) {
+    throw new Error('Geen geldige payload gevonden');
+  }
+
+  const existing = loadStandaloneServices();
+  const incoming = payload.standalone;
+
+  const combined = [...existing];
+  incoming.forEach((entry) => {
+    if (!entry?.name) return;
+    const already = combined.find(
+      (item) => item.name === entry.name && (item.host || '') === (entry.host || '') && item.type === entry.type,
+    );
+    if (!already) {
+      combined.push({
+        name: entry.name,
+        host: entry.host || '',
+        type: entry.type || 'anders',
+        status: entry.status || 'unknown',
+        users: entry.users || '',
+        folders: entry.folders || '',
+        ports: entry.ports || '',
+        note: entry.note || '',
+      });
+    }
+  });
+
+  saveStandaloneServices(combined);
+  renderStandalone(combined);
+  return combined.length - existing.length;
 }
 
 function formatType(type) {
@@ -265,7 +341,8 @@ function buildTree(nodes, parentId = '') {
     li.innerHTML = `<span class="node-title">${child.title}</span>`;
     const meta = document.createElement('div');
     meta.className = 'node-meta';
-    meta.textContent = child.parentId ? `Onder ${nodes.find((n) => n.id === child.parentId)?.title || 'root'}` : 'Bovenste laag';
+    const parentTitle = child.parentId ? nodes.find((n) => n.id === child.parentId)?.title || 'root' : 'Bovenste laag';
+    meta.textContent = `${parentTitle}${child.note ? ` • ${child.note}` : ''}`;
     li.appendChild(meta);
     const subtree = buildTree(nodes, child.id);
     if (subtree) li.appendChild(subtree);
@@ -274,12 +351,26 @@ function buildTree(nodes, parentId = '') {
   return ul;
 }
 
+function syncMapSelectors(nodes) {
+  const options = '<option value="">Geen (topniveau)</option>' + nodes.map((node) => `<option value="${node.id}">${node.title}</option>`).join('');
+  mapParent.innerHTML = options;
+  if (serviceMapParent) serviceMapParent.innerHTML = options;
+}
+
 function renderMindmap() {
   const nodes = loadMap();
-  mapParent.innerHTML = '<option value="">Geen (topniveau)</option>' + nodes.map((node) => `<option value="${node.id}">${node.title}</option>`).join('');
+  syncMapSelectors(nodes);
   mindmapTree.innerHTML = '';
   const tree = buildTree(nodes);
   mindmapTree.appendChild(tree || document.createTextNode('Nog geen knopen toegevoegd.'));
+}
+
+function addNodeToMap(title, parentId = '', note = '') {
+  const nodes = loadMap();
+  const id = crypto.randomUUID ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  nodes.push({ id, title, parentId, note });
+  saveMap(nodes);
+  renderMindmap();
 }
 
 function handleMapSubmit(event) {
@@ -287,12 +378,254 @@ function handleMapSubmit(event) {
   const title = mapTitle.value.trim();
   const parentId = mapParent.value;
   if (!title) return;
-  const nodes = loadMap();
-  const id = crypto.randomUUID ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-  nodes.push({ id, title, parentId });
-  saveMap(nodes);
+  addNodeToMap(title, parentId);
   mapForm.reset();
-  renderMindmap();
+}
+
+function formatServiceType(type) {
+  const types = {
+    docker: { label: 'Docker container', icon: '🐳' },
+    vm: { label: 'VM', icon: '🖥️' },
+    stack: { label: 'Stack', icon: '🧩' },
+    service: { label: 'Service', icon: '🛠️' },
+    share: { label: 'Share', icon: '📂' },
+    game: { label: 'Game server', icon: '🎮' },
+    anders: { label: 'Overig', icon: '📦' },
+  };
+  return types[type] || types.anders;
+}
+
+function formatServiceStatus(status) {
+  const lookup = {
+    running: { label: 'Aan', className: 'online' },
+    stopped: { label: 'Uit', className: 'offline' },
+    unknown: { label: 'Onbekend', className: '' },
+  };
+  return lookup[status] || lookup.unknown;
+}
+
+function createServiceCard(service) {
+  const article = document.createElement('article');
+  article.className = 'card grid-row';
+  article.dataset.serviceId = service.id;
+  const typeInfo = formatServiceType(service.type);
+  const statusInfo = formatServiceStatus(service.status);
+
+  article.innerHTML = `
+    <div class="card__header">
+      <h3 class="card__title">${service.name}</h3>
+    </div>
+    <div class="badge-row">
+      <span class="pill">${typeInfo.icon} ${typeInfo.label}</span>
+      ${service.host ? `<span class="pill">Host: ${service.host}</span>` : ''}
+      ${service.ports ? `<span class="pill">${service.ports}</span>` : ''}
+      <span class="status-chip"><span class="dot ${statusInfo.className}"></span>${statusInfo.label}</span>
+    </div>
+    <div class="card__meta card__meta--two-col">
+      ${service.users ? `<span class="muted"><strong>Users:</strong> ${service.users}</span>` : ''}
+      ${service.folders ? `<span class="muted"><strong>Folders:</strong> ${service.folders}</span>` : ''}
+    </div>
+    ${service.note ? `<p class="card__note">${service.note}</p>` : ''}
+    <div class="card__actions">
+      <button class="btn ghost small" type="button" data-action="toggle-status">Status wisselen</button>
+      <button class="btn primary small" type="button" data-action="map-service">Naar mindmap</button>
+    </div>
+  `;
+
+  return article;
+}
+
+function createStandaloneCard(entry) {
+  const article = document.createElement('article');
+  article.className = 'card grid-row';
+  article.dataset.standaloneId = entry.id;
+  const typeInfo = formatServiceType(entry.type);
+  const statusInfo = formatServiceStatus(entry.status);
+
+  article.innerHTML = `
+    <div class="card__header">
+      <h3 class="card__title">${entry.name}</h3>
+    </div>
+    <div class="badge-row">
+      <span class="pill">${typeInfo.icon} ${typeInfo.label}</span>
+      ${entry.host ? `<span class="pill">Host: ${entry.host}</span>` : ''}
+      ${entry.ports ? `<span class="pill">${entry.ports}</span>` : ''}
+      <span class="status-chip"><span class="dot ${statusInfo.className}"></span>${statusInfo.label}</span>
+    </div>
+    <div class="card__meta card__meta--two-col">
+      ${entry.users ? `<span class="muted"><strong>Users:</strong> ${entry.users}</span>` : ''}
+      ${entry.folders ? `<span class="muted"><strong>Folders:</strong> ${entry.folders}</span>` : ''}
+    </div>
+    ${entry.note ? `<p class="card__note">${entry.note}</p>` : ''}
+    <div class="card__actions">
+      <button class="btn ghost small" type="button" data-action="toggle-standalone-status">Status wisselen</button>
+      ${entry.host ? `<button class="btn primary small" type="button" data-action="copy-host" data-copy-value="${entry.host}">Kopieer host</button>` : ''}
+    </div>
+  `;
+
+  return article;
+}
+
+function renderServices() {
+  const services = loadServices();
+  serviceList.innerHTML = '';
+  services.forEach((service) => serviceList.appendChild(createServiceCard(service)));
+  const hasItems = services.length > 0;
+  serviceEmpty.hidden = hasItems;
+  serviceList.toggleAttribute('data-has-items', hasItems);
+}
+
+function filterStandalone(entry, typeFilter, statusFilter, searchTerm) {
+  const matchesType = typeFilter ? entry.type === typeFilter : true;
+  const matchesStatus = statusFilter ? entry.status === statusFilter : true;
+  const matchesSearch = searchTerm
+    ? (entry.name + entry.host + entry.note + entry.ports + entry.users)
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase())
+    : true;
+  return matchesType && matchesStatus && matchesSearch;
+}
+
+function renderStandalone() {
+  if (!standaloneList) return;
+  const entries = loadStandaloneServices();
+  const typeFilter = standaloneTypeFilter?.value || '';
+  const statusFilter = standaloneStatusFilter?.value || '';
+  const searchTerm = standaloneSearch?.value.trim() || '';
+
+  const filtered = entries.filter((entry) => filterStandalone(entry, typeFilter, statusFilter, searchTerm));
+
+  standaloneList.innerHTML = '';
+  filtered.forEach((entry) => standaloneList.appendChild(createStandaloneCard(entry)));
+  const hasItems = filtered.length > 0;
+  if (standaloneEmpty) standaloneEmpty.hidden = hasItems;
+  standaloneList?.toggleAttribute('data-has-items', hasItems);
+}
+
+function handleServiceSubmit(event) {
+  event.preventDefault();
+  const name = document.getElementById('serviceName').value.trim();
+  const host = document.getElementById('serviceHost').value.trim();
+  const type = document.getElementById('serviceType').value;
+  const status = document.getElementById('serviceStatus').value;
+  const users = document.getElementById('serviceUsers').value.trim();
+  const folders = document.getElementById('serviceFolders').value.trim();
+  const ports = document.getElementById('servicePorts').value.trim();
+  const note = document.getElementById('serviceNote').value.trim();
+  const mapParentId = serviceMapParent?.value || '';
+
+  if (!name) return;
+
+  const services = loadServices();
+  const id = crypto.randomUUID ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  const service = { id, name, host, type, status, users, folders, ports, note, mapParentId };
+  services.push(service);
+  saveServices(services);
+  renderServices();
+  serviceForm.reset();
+
+  if (mapParentId !== undefined) {
+    const mapNote = [formatServiceType(type).label, host || null, ports || null].filter(Boolean).join(' • ');
+    addNodeToMap(name, mapParentId, mapNote);
+  }
+}
+
+function pushServiceToMap(service) {
+  const mapNote = [formatServiceType(service.type).label, service.host || null, service.ports || null].filter(Boolean).join(' • ');
+  addNodeToMap(service.name, service.mapParentId || '', mapNote);
+}
+
+function toggleServiceStatus(service) {
+  const order = ['running', 'stopped', 'unknown'];
+  const currentIndex = order.indexOf(service.status);
+  const nextStatus = order[(currentIndex + 1) % order.length];
+  service.status = nextStatus;
+  return service;
+}
+
+function handleServiceAction(event) {
+  const action = event.target.dataset.action;
+  if (!action) return;
+  const article = event.target.closest('[data-service-id]');
+  if (!article) return;
+  const serviceId = article.dataset.serviceId;
+  const services = loadServices();
+  const service = services.find((item) => item.id === serviceId);
+  if (!service) return;
+
+  if (action === 'toggle-status') {
+    toggleServiceStatus(service);
+    saveServices(services);
+    renderServices();
+    return;
+  }
+
+  if (action === 'map-service') {
+    pushServiceToMap(service);
+  }
+}
+
+function handleStandaloneSubmit(event) {
+  event.preventDefault();
+  const name = document.getElementById('standaloneName').value.trim();
+  const host = document.getElementById('standaloneHost').value.trim();
+  const type = document.getElementById('standaloneType').value;
+  const status = document.getElementById('standaloneStatus').value;
+  const users = document.getElementById('standaloneUsers').value.trim();
+  const folders = document.getElementById('standaloneFolders').value.trim();
+  const ports = document.getElementById('standalonePorts').value.trim();
+  const note = document.getElementById('standaloneNote').value.trim();
+
+  if (!name) return;
+
+  const entries = loadStandaloneServices();
+  const id = crypto.randomUUID ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  entries.push({ id, name, host, type, status, users, folders, ports, note });
+  saveStandaloneServices(entries);
+  renderStandalone();
+  standaloneForm.reset();
+}
+
+function handleStandaloneImport() {
+  if (!standaloneImport || !standaloneImportButton || !standaloneImportStatus) return;
+  const raw = standaloneImport.value.trim();
+  if (!raw) {
+    standaloneImportStatus.textContent = 'Plak eerst een payload.';
+    return;
+  }
+
+  try {
+    const payload = JSON.parse(atob(raw));
+    const added = mergeStandalonePayload(payload);
+    standaloneImportStatus.textContent = `Geïmporteerd. ${added} nieuwe items toegevoegd.`;
+    standaloneImport.value = '';
+  } catch (error) {
+    standaloneImportStatus.textContent = 'Kon payload niet lezen. Controleer of je de volledige string hebt gekopieerd.';
+  }
+}
+
+function handleStandaloneAction(event) {
+  const action = event.target.dataset.action;
+  if (!action) return;
+  const article = event.target.closest('[data-standalone-id]');
+  if (!article) return;
+  const entries = loadStandaloneServices();
+  const entry = entries.find((item) => item.id === article.dataset.standaloneId);
+  if (!entry) return;
+
+  if (action === 'toggle-standalone-status') {
+    toggleServiceStatus(entry);
+    saveStandaloneServices(entries);
+    renderStandalone();
+    return;
+  }
+
+  if (action === 'copy-host' && event.target.dataset.copyValue) {
+    navigator.clipboard.writeText(event.target.dataset.copyValue).then(() => {
+      event.target.textContent = 'Gekopieerd';
+      setTimeout(() => (event.target.textContent = 'Kopieer host'), 1000);
+    });
+  }
 }
 
 function bootstrap() {
@@ -306,6 +639,16 @@ function bootstrap() {
   mapForm.addEventListener('submit', handleMapSubmit);
   linkList.addEventListener('click', handleCardAction);
   renderMindmap();
+  if (serviceForm) serviceForm.addEventListener('submit', handleServiceSubmit);
+  if (serviceList) serviceList.addEventListener('click', handleServiceAction);
+  renderServices();
+  if (standaloneForm) standaloneForm.addEventListener('submit', handleStandaloneSubmit);
+  if (standaloneList) standaloneList.addEventListener('click', handleStandaloneAction);
+  if (standaloneTypeFilter) standaloneTypeFilter.addEventListener('change', renderStandalone);
+  if (standaloneStatusFilter) standaloneStatusFilter.addEventListener('change', renderStandalone);
+  if (standaloneSearch) standaloneSearch.addEventListener('input', renderStandalone);
+  if (standaloneImportButton) standaloneImportButton.addEventListener('click', handleStandaloneImport);
+  renderStandalone();
 }
 
 document.addEventListener('DOMContentLoaded', bootstrap);
